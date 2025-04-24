@@ -105,7 +105,6 @@
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
-        // Marker vị trí hiện tại: chấm tròn xanh dương nhạt
         var userIcon = L.divIcon({
             className: 'my-location-icon',
             iconSize: [22, 22],
@@ -220,6 +219,7 @@
 
         // Tự động lấy vị trí khi load trang
         map.locate({setView: true, maxZoom: 15});
+
     </script>
 </body>
 </html>
