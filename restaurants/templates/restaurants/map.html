@@ -1,225 +1,30 @@
+{% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
     <title>Bản đồ Quán Ăn Tân An</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Leaflet & plugin CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css"/>
     <link rel="stylesheet" href="https://unpkg.com/leaflet.locatecontrol/dist/L.Control.Locate.min.css" />
-    <style>
-        #map { height: 600px; width: 100%; }
-
-        /* Marker vị trí hiện tại: chấm tròn xanh, bóng nhạt */
-        .my-location-icon {
-            background: #2196f3;
-            border: 4px solid #90caf9;
-            border-radius: 50%;
-            width: 22px;
-            height: 22px;
-            box-shadow: 0 0 12px 2px #2196f3aa;
-        }
-        .my-location-tooltip {
-            background: #fff;
-            color: #2196f3;
-            border-radius: 7px;
-            border: 1px solid #2196f3;
-            font-weight: 500;
-            font-size: 0.98em;
-            box-shadow: 0 2px 8px rgba(33,150,243,0.09);
-            padding: 2px 8px;
-        }
-        /* Popup quán ăn đẹp */
-        .leaflet-popup-content-wrapper {
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.18);
-            border: 1.5px solid #47a23d;
-            padding: 0;
-        }
-        .leaflet-popup-content {
-            margin: 10px 14px 10px 14px !important;
-            font-family: 'Segoe UI', Arial, sans-serif;
-            color: #222;
-            min-width: 120px;
-            max-width: 320px;
-        }
-        .popup-img {
-            width: 100%;
-            height: 120px;
-            object-fit: cover;
-            border-radius: 7px;
-            margin-bottom: 8px;
-            border: 1px solid #eee;
-        }
-        .popup-title {
-            font-size: 1.15em;
-            font-weight: bold;
-            margin-bottom: 2px;
-            color: #2c3e50;
-        }
-        .popup-rating {
-            color: #ffc107;
-            font-size: 1.1em;
-            font-weight: bold;
-            margin-bottom: 4px;
-        }
-        .popup-info {
-            font-size: 0.98em;
-            margin-bottom: 2px;
-        }
-        .popup-distance {
-            font-size: 0.96em;
-            color: #47a23d;
-            margin-bottom: 6px;
-        }
-        .btn-route {
-            display: inline-block;
-            background: linear-gradient(90deg, #47a23d 70%, #64b678 100%);
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            padding: 7px 18px;
-            font-size: 1em;
-            font-weight: 500;
-            cursor: pointer;
-            box-shadow: 0 2px 6px rgba(71,162,61,0.09);
-            transition: background 0.2s;
-            margin-top: 5px;
-        }
-        .btn-route:hover {
-            background: linear-gradient(90deg, #39911f 70%, #47a23d 100%);
-        }
-    </style>
+    <link rel="stylesheet" href="{% static 'css/L.Icon.Pulse.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/map.css' %}" />
 </head>
 <body>
-    <h2>Bản đồ Quán Ăn Tân An</h2>
-    <div id="map"></div>
+    <div class="header">
+        <h2>Bản đồ Quán Ăn Tân An</h2>
+    </div>
+    <div id="map-container">
+        <div id="map"></div>
+    </div>
+    <!-- Leaflet & plugin JS -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
     <script src="https://unpkg.com/leaflet.locatecontrol/dist/L.Control.Locate.min.js"></script>
-    <script>
-        var map = L.map('map').setView([10.5354, 106.4145], 14);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
-
-        var userIcon = L.divIcon({
-            className: 'my-location-icon',
-            iconSize: [22, 22],
-            iconAnchor: [11, 11]
-        });
-
-        // Marker đỏ cho các quán ăn
-        var restaurantIcon = new L.Icon({
-            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
-            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-            iconSize: [25, 41],
-            iconAnchor: [12, 41],
-            popupAnchor: [1, -34],
-            shadowSize: [41, 41]
-        });
-
-        var userMarker = null;
-        var userCircle = null;
-        var userLatLng = null;
-        var routingControl = null;
-
-        // Nút "Đến vị trí của tôi" đẹp như Google Maps
-        var lc = L.control.locate({
-            position: 'topleft',
-            strings: {
-                title: "Đến vị trí của tôi"
-            },
-            drawCircle: true,
-            keepCurrentZoomLevel: true,
-            showPopup: false,
-            locateOptions: {
-                enableHighAccuracy: true
-            }
-        }).addTo(map);
-
-        // Khi xác định được vị trí, marker là chấm tròn xanh, có vòng tròn bán kính, tooltip nhỏ
-        map.on('locationfound', function(e) {
-            if (userMarker) map.removeLayer(userMarker);
-            if (userCircle) map.removeLayer(userCircle);
-            userMarker = L.marker(e.latlng, {icon: userIcon}).addTo(map)
-                .bindTooltip("Bạn đang ở đây", {permanent: true, direction: 'top', offset: [0, -10], className: 'my-location-tooltip'});
-            userCircle = L.circle(e.latlng, {
-                radius: e.accuracy,
-                color: '#2196f3',
-                fillColor: '#90caf9',
-                fillOpacity: 0.18,
-                weight: 2
-            }).addTo(map);
-            userLatLng = e.latlng;
-            showRestaurants();
-        });
-
-        map.on('locationerror', function(e) {
-            alert("Không lấy được vị trí của bạn: " + e.message);
-            showRestaurants();
-        });
-
-        // Hiển thị các quán ăn và popup
-        function showRestaurants() {
-            fetch("{% url 'restaurant_json' %}")
-                .then(response => response.json())
-                .then(data => {
-                    data.forEach(function(item) {
-                        var distance = "";
-                        if (userLatLng) {
-                            var d = map.distance([item.latitude, item.longitude], [userLatLng.lat, userLatLng.lng]);
-                            if (d > 1000) {
-                                distance = (d/1000).toFixed(2) + " km";
-                            } else {
-                                distance = Math.round(d) + " m";
-                            }
-                        }
-                        var stars = "★".repeat(Math.round(item.rating)) + "☆".repeat(5 - Math.round(item.rating));
-                        var popupContent =
-                            `<img src="${item.image}" class="popup-img" alt="Ảnh quán ăn"/>
-                            <div class="popup-title">${item.name}</div>
-                            <div class="popup-rating">${stars} <span style="color:#222;font-size:0.98em;">(${item.rating}/5)</span></div>
-                            <div class="popup-info"><b>Địa chỉ:</b> ${item.address}</div>
-                            <div class="popup-info"><b>Điện thoại:</b> ${item.phone}</div>
-                            <div class="popup-info"><b>Giờ mở cửa:</b> ${item.open_time} - ${item.close_time}</div>
-                            ${distance ? `<div class="popup-distance"><b>Khoảng cách:</b> ${distance}</div>` : ""}
-                            <button class="btn-route" onclick="showRoute(${item.latitude},${item.longitude},'${item.name.replace(/'/g,"\\'")}')">
-                                🧭 Chỉ đường
-                            </button>`;
-                        L.marker([item.latitude, item.longitude], {icon: restaurantIcon}).addTo(map)
-                            .bindPopup(popupContent, {className: 'custom-popup'});
-                    });
-                });
-        }
-
-        // Vẽ đường đi nhanh nhất bằng OSRM mặc định của Leaflet Routing Machine
-        function showRoute(destLat, destLng, destName) {
-            if (!userLatLng) {
-                alert("Không xác định được vị trí hiện tại của bạn!");
-                return;
-            }
-            if (routingControl) {
-                map.removeControl(routingControl);
-            }
-            routingControl = L.Routing.control({
-                waypoints: [
-                    L.latLng(userLatLng.lat, userLatLng.lng),
-                    L.latLng(destLat, destLng)
-                ],
-                fitSelectedRoutes: false, // Không tự động zoom lại khi chỉ đường
-                show: false,
-                addWaypoints: false,
-                draggableWaypoints: false,
-                routeWhileDragging: false
-            }).addTo(map);
-        }
-
-        // Tự động lấy vị trí khi load trang
-        map.locate({setView: true, maxZoom: 15});
-
-    </script>
+    <!-- PHẢI ĐẢM BẢO plugin này được load trước file map.js -->
+    <script src="{% static 'js/L.Icon.Pulse.js' %}"></script>
+    <script src="{% static 'js/map.js' %}"></script>
 </body>
 </html>
