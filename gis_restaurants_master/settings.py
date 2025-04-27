@@ -95,9 +95,9 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'gis_restaurants_db',
         'USER': 'postgres',
-        'PASSWORD': 'mat_khau_moi',
+        'PASSWORD': 'admin123',
         'HOST': 'localhost',
-        'PORT': '5432',
+        'PORT': '5431',
     }
 }
 

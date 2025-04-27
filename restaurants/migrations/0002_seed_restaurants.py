@@ -85,7 +85,7 @@ def create_restaurants(apps, schema_editor):
         "name": "Sushi Zen",
         "address": "164 Thủ Khoa Huân, Phường 1, Tân An, Long An 82106, Việt Nam",
         "phone": "0343643737",
-        "image": "restaurant_images/shushi.jpg",
+        "image": "restaurant_images/sushi.jpg",
         "open_time": time(8, 0),
         "close_time": time(22, 0),
         "latitude": 10.537451657958986, 
